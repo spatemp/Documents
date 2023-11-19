@@ -1,0 +1,99 @@
+Docker Installation :
+
+You must first install docker on your machine. You will need desktop admin help to install it. Here's the link to download docker desktop https://docs.docker.com/get-docker/ .
+
+Doker Commands to run SQL SERVER:
+
+Once, docker is installed you can run these commands from command prompt.
+
+Pull sql server image from repository to your local repository.
+
+docker pull mcr.microsoft.com/mssql/server:2019-latest
+
+This command will start sql server container instance. it will also pull the image if it does not exists on your local repository.
+
+docker run --name sql1 -p 1433:1433 -v sqlvolume:/var/opt/mssql -v c:/SQLBackup/:/var/opt/mssql/backup -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=sql!dba123" -e "MSSQL_PID=Developer" -e 'TZ=America/New_York' -d mcr.microsoft.com/mssql/server
+
+In the above, c:/SQLBackup/ is where you would want to copy sqlserver backup files so that you can access it from inside your container and restore the database. The directory inside the container where you access the SQL backup file is /var/opt/mssql/backup.
+
+You can also use the command below and really do not have to map the local c:/SQLBackup/ directory in the above command. You can simply copy it with the following command. It's another way of getting something from your local into a container.
+
+docker cp c:\sqlbackup\backupdb.bak <containerId>:/var/opt/mssql/backup/
+
+Running second instance at the same time. Notice the different port mapping and sqlvolumeB mapping.
+
+docker run --name sql2 -p 60500:1433 -v sqlvolumeB:/var/opt/mssql -v c:/SQLBackup/:/var/opt/mssql/backup -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=sql!dba123" -e "MSSQL_PID=Developer" -e 'TZ=America/New_York' -d mcr.microsoft.com/mssql/server
+
+Docker-Compose way of starting SQL Server:
+
+The following is the docker compose way of starting the sql server in docker.
+
+Create a docker compose file and place it in some directory. You can call it anything but extension should be .yml.
+
+File - docker-compose.yml
+(can be any name, but many tools expect the above as default.)
+version: "3.8"
+
+services:
+  sql1:
+    image: mcr.microsoft.com/mssql/server
+    ports:
+      - 60500:1433
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SA_PASSWORD}
+      - MSSQL_PID=Developer
+      - TZ=America/New_York
+    volumes:
+      - sqlvolume:/var/opt/mssql
+      - c:/SQLBackup/:/var/opt/mssql/backup
+volumes:
+  sqlvolume:
+Create a .env file in the same folder as following. This is a one way of referencing environment variables in compose file.
+
+File - .env
+# environment variables
+SA_PASSWORD=sql!dba123
+Once the above files are created, you can start the SQL Server running in side docker with docker-compose command. Start command prompt and go to directory where you created the compose file above and then type the following commands to start or stop the Sql Server container instance.
+
+# start sql server in background (-d). 
+docker-compose up -d
+# stop sql server
+docker-compose down
+(NOTE: If you used a different name for .yml file, you'll have to indicate the file with -f option.)
+
+Some simple docker commands to start and stop containers as well as to check images and volumes on your local box.
+
+docker stop  sql1
+docker start sql1
+
+docker exec -it sql1 /bin/bash
+
+docker stop sql1
+docker ps -a
+docker rm sql1
+
+docker image ls
+docker volume ls
+
+Running commands from powershell to stop or remove all containers
+
+powershell
+docker stop $(docker ps -q)
+docker rm $(docker ps -a -q)
+Playing with Redis :
+
+# pull down redis image and start docker container
+docker run -d -p 6379:6379 --name rediscont1 redis
+# run interactive command inside redis container (rediscont1)
+docker exec -it rediscont1 /bin/bash
+ls -al 
+redis-cli            # start redis cli
+ping 
+set name SunilPatel  # setting name key with SunilPatel as value
+get name             # retrieve name key value
+incr counter         # set and increment counter key
+incr counter         # increment it by 1 again
+get counter          # get couner key value
+exit                 # exit redis cli
+exit                 # exit interactive /bin/bash session with container
