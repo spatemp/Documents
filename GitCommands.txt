@@ -1,0 +1,85 @@
+GIT COMMANDS:
+
+Clone repository:
+git clone https://BillerSolutions@dev.azure.com/BillerSolutions/WalkIn/_git/CFPAPI
+
+Recursively add the entire folder to a repository
+git add *
+git add --all
+
+
+You can create a new branch called my-work (based on your current commit) and switch to that branch with:
+
+//CREATE BRANCH
+git branch my-work
+git checkout my-work
+
+#Or, as a shortcut for those two commands, you can just do:
+#creating and checking out to work on new branch
+git checkout -b feature/falcons/Sunil
+rem To push that branch to the repository that you cloned from, you should do:
+
+git push -u origin sunil
+#  the below works.
+rem git push -u --recurse-submodules=check --progress "origin" refs/heads/feature/falcons/main:refs/heads/feature/falcons/main
+
+However, I want to temporarily ignore the changes in one of the files:
+$ git update-index --assume-unchanged README.textile
+ revert back to the latest copy
+git update-index --no-assume-unchanged README.textile
+
+# CREATE RELEASE BRANCH
+# Make current branch development
+# create a local branch from development
+git checkout -b release/release_xyz
+# tie local and origin branch 
+git push --set-upstream origin release/release_xyz
+
+# create a tag
+GIT tag tag_name
+# push tag name
+git push --tags #push tag to 
+
+# forces to update and change branch to following specially 
+# when you get message that says uncomitted changes can not switch
+git checkout -f release/release_4.0.39.0
+
+
+#STASH
+#https://git-scm.com/docs/git-stash
+git stash
+edit emergency fix
+git commit -a -m "Fix in a hurry"
+git stash pop
+# ... continue hacking ...
+# another set of commands to try.
+git stash save "my_stash"  --where "my_stash" is the stash name...
+git stash list  -- This will list down all your stashes.
+# To apply a stash and remove it from the stash stack, You can give,
+git stash pop stash@{n}
+#To apply a stash and keep it in the stash stack, type:
+git stash apply stash@{n}
+#You can turn a stash into a branch if you feel it's important enough:
+git stash branch <branchname> [<stash>]
+
+
+
+# Complete MERGE from Command Line
+First, you'll need to ensure that feature/falcons/main and develop branches are up to date:
+git fetch origin
+git checkout -b feature/falcons/main origin/feature/falcons/main
+Next, merge the changes in develop into feature/falcons/main and resolve conflicts:
+git checkout feature/falcons/main
+git merge origin/develop
+Then, after building and testing your code, update the pull request with the latest changes:
+git push origin feature/falcons/main
+Return here to finish the Pull Request.
+
+# Git CHERRY PICK
+# Scenario: You were working on a certain branch of a git repository, and you committed some changes to it. 
+# Then you realize, this particular commit should also go to another branch of the repository BUT you are not 
+# ready for a complete merge. Maybe this commit was meant for the other branch?
+#
+# Switch to branch where you would like commit and then
+# git cherry-pick <commit hash>
+git cherry-pick d4d8e7c
