@@ -1,0 +1,114 @@
+• How Roles Work
+ 
+Org Roles
+  - Org Manager - Administer Entire Organization.  
+Managing users, viewing Quotas, Adding managing space, Inviting people to spaces, see what the applications in space
+  - Org Auditor - people view, view quota, view users and roles.  Just an oversite positions
+  
+Space Roles - Space manager, add space, delete space, view status or instance count or how many services in space
+  - Space Developer - deploy app, stop/start/rename/delete app.  Create an add view services in space.
+  - Space Auditor - view but not edit.  View the status of things in the app.
+  
+ 
+• Logging into space - 
+- cf api https://apps.sys.fog.onefiserv.net
+- cf target -o -s   # target org and space
+- cf login 
+- cf spaces
+Services and Instances - 
+   Two types 
+   - Managed Service Instance
+   - User Provided Service Instances - 
+   Multiple deployment options
+  
+• YAML Manifests
+   - Describe push activities
+ -----------------------------------------  
+ ---
+ # comment in manifest
+ instances: 2   # shared attributes
+ Applications:
+-name somewebsite # this is application name
+ buildpack: https://git ...
+ stack: windows2012
+ domain: domain.com 
+ host: manage 
+ instances: 3  # number of instances at deployment.  3 different container.  load balanceing
+ memory: 512M  # memory per instance of application
+ path: ./web/  # where your app is 
+ timeout: 60   #  give more time to start or warm up time
+ no-route: true  # 
+Services:
+   - mymongo
+   - rabbitqueue  
+env:
+NODE_ENV: production
+TRACKING: off
+--------------------------------------------
+• What Happens During Deployment?
+   - Cloud Controller creates record - in local database 
+   - Cloud Controller stores metadata - name of the app, how many instances, ...
+   - Cloud Controller stores app files -  stores the application raw files in blob stores
+   - App start command issued -  issue start command
+   - Cloud Controller chooses staging DEA
+   - Staging DEA stages and streams 
+   - Staging DEA caches package
+   - Cloud Controller chooses runtime DEA
+   
+• Deploying Applications via CLI
+- cf push <appname>         # will stop all instances by default if app is deployed previously
+- cf push <appname> --no-manifest
+- cf push <appname> -i 2 
+
+• Scaling - 
+cf scale psdonationwebsite -m 256M    # scale in 
+cf scale psdonationwebsite -i 3    #scale out - more instances
+cf apps
+cf scale psdonationwebsite -i 2    #scale down
+
+cf files psdonationwebsite   # list of all files in cloud
+cf files psdonationwebsite /app/log.txt   # list files in given folder
+Troubleshooting App
+Using Logs:
+- Type of Logs: 
+- cf files psdonationwebsite /logs/staging   
+- cf logs 
+- cf logs psdonationwebsite --recent
+- cf events psdonationwebsite   # some od things are going on, what's going on in platform
+- 
+• Environment Variables
+- cf set-env <app> <variable-name> <variable-value>
+- cf unset-env <app> <variable-name>
+- cf env <nameOfApp>
+
+• Performing No-Downtime Updates - Blue Green Deployment 
+   # create a new website and new route.  remember psdonationwebsite already exists and deployed.
+   - cf push psdonationwebsite-stg -n psdonationwebsite-stg # -n new route.  
+   # make both URL point to cfapps.io is domain (psdonationwebsite.cfapps.io or psdonationwebsite-stg.cfapps.io)
+   # request to both URL's will go to one site (staging)
+   - cf map-route psdonationwebsite-stg cfapps.io -n psdonationwebsite
+   # this removes any URL pointing to the original prod site.  meaning the site/code exists but no URL point to it. 
+   # so taking the original site off line.
+   - cf unmap-route psdonationwebsite cfapps.io -n psdonationwebsite  
+   # removing the stage URL route/mapping
+   - cf unmap-route psdonationwebsite-stg cfapps.io -n psdonationwebsite-stg
+
+Remote Debugging
+
+https://dotnet-cookbook.cfapps.io/core/remote-debug
+
+cf ssh APP_NAME -c "curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l ~/app/vsdbg"
+If you get error with above curl: (35) Unknown SSL protocol error in connection to aka.ms:443
+Try again as it seems it errors out with aka thing
+
+- Visual studio commond window:
+DebugAdapterHost.Logging /On /OutputWindow
+DebugAdapterHost.Launch /LaunchJson:C:\VSTS\BillerHub\BillerhubAPI_V2\BillerhubAPI_V2\launch.json
+
+Launch.jston:
+{ "version": "0.2.0", "adapter": "cf", "adapterArgs": "ssh APP_NAME -c \"/tmp/lifecycle/shell /home/vcap/app 'bash -c \\\"~/vsdbg/vsdbg --interpreter=vscode\\\"'\"", "languageMappings": { "C#": { "languageId": "3F5162F8-07C6-11D3-9053-00C04FA302A1", "extensions": [ "*" ] } }, "exceptionCategoryMappings": { "CLR": "449EC4CC-30D2-4032-9256-EE18EB41B62B", "MDA": "6ECE07A9-0EDE-45C4-8296-818D8FC401D4" }, "configurations": [ { "name": ".NET Core Launch", "type": "coreclr", "processName": "dotnet", "request": "attach", "justMyCode": false, "cwd": "~/app", "logging": { "engineLogging": true } } ] }
+
+From <https://dotnet-cookbook.cfapps.io/core/remote-debug/> 
+
+
+
