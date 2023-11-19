@@ -1,0 +1,213 @@
+
+Logging into space - 
+    - cf api https://api.sys.fog.onefiserv.net # set this first.  it could be lower region or upper 
+	- cf target -o -s   # target org and space.  specially if multiple orgs
+	- cf login -a api.sys.fog.onefiserv.net 
+	- cf login -a api.sys.fog.onefiserv.net  -u supatel -s sp-space
+	- cf login 
+	- cf spaces
+	- cf apps
+	- cf stacks
+	- cf help -a
+	- cf files APPNAME # see all the files of your app
+	- cf files APPNAME /app # see all the files of your app but in /app directory
+	- cf files APPNAME /app/log.txt # this will sort of type out the content of the log.txt
+	
+	-- to delete deployed app
+	- cf delete -r APPNAME
+	
+Services and Instances - 
+   Two types 
+   - Managed Service Instance
+   - User Provided Service Instances - 
+   Multiple deployment options
+  
+   - Create service instance 
+   - cf marketplace
+   - cf create-service mongolab sandbox mymongo  # consume mongolab, sandbox is plan, mymongo (nameofservice)
+   - cf services
+   
+Scaling -
+ - cf scale APPNAME -m 512M  # scale vertically
+ - cf scale APPNAME -k 1G
+ - cf scale APPNAME -i 3    # scale up
+ - cf apps
+ - cf scale APPNAME -i 2    # scale down
+ 
+App - 
+ - cf apps
+ - cf app APPNAME
+ - cf start APPNAME
+ - cf stop APPNAME
+ - Deleteing app
+ - cf services  # find out which services are bound to your app
+ - cf delete-service service-instance #to delete the service instance.
+ - cf delete -r APPNAME  # deletes app and the routes(-r) associated apps.  does not delete any services that are associated with this app though 
+ - cf push pcfwebapp -f ./Deployment/
+ - cf app pcfwebapp
+ 
+Deploying Applications via CLI
+ - cf push APPNAME  # will stop all instances by default if app is deployed previously
+ - cf push APPNAME --no-manifest
+ - cf push APPNAME -i 2 
+
+Users/Roles - 
+ - cf set-space-role supatel biller-org <SPACE> spaceManager #SpaceDeveloper or SpaceAuditor
+ - cf unset-set-space-role supatel biller-org <SPACE> spaceManager #SpaceDeveloper or SpaceAuditor
+
+Spring Cloud ConfigServer - 
+ - docker run -d --publish 8888:8888 --volume c:/sqlbackup:/config steeltoeoss/config-server --spring.profiles.active=native --spring.cloud.config.server.native.searchLocations=file:///config
+ - docker run -d --publish 8888:8888 steeltoeoss/config-server --spring.cloud.config.server.git.uri=https://github.com/spatemp/ConfigServer 
+ - docker run -d --hostname my-rabbit --name my-rabbit -p 15672:15672 -p  5672:5672 rabbitmq:3-managemen
+ - Documents - https://docs.vmware.com/en/Spring-Cloud-Services-for-VMware-Tanzu/3.1/spricf create-service p.config-server standard myConfigServer -c '{"git": { "uri": "https://dev.azure.com/BillerSolutions/WalkIn/_git/CFPAPI", "label": "developbranch" }}'ng-cloud-services/GUID-config-server-configuring-with-git.html
+ - 
+ - cf update-service myConfigServer -c cloudConfig.json
+ - cf config-server-sync-mirrors myConfigServer  # refreshes mirrors 
+ - cf update-service my-config-server -c '{"update-git-repos": true }'  # this does the same as above.  refreshes mirror.
+
+docker support -
+   cf enable-feature-flag diego_docker
+
+Files - 
+
+cf files psdonationwebsite   # list of all files in cloud
+cf files psdonationwebsite /app/log.txt   # list files in given folder
+
+Troubleshooting App -
+Using Logs:
+	- Type of Logs: 
+	- cf files APPNAME /logs    # will list out all of the log files
+	- cf files psdonationwebsite /logs/staging   
+	- cf logs 
+	- cf logs psdonationwebsite --recent  # log of the 
+	- cf events psdonationwebsite   # major system events.  what's going on in platform
+	- 
+Environment Variables -
+	- cf set-env <app> <variable-name> <variable-value>
+	- cf unset-env <app> <variable-name>
+	- cf env <app>   # will show environment variable defined for this app
+	 
+ 
+YAML Manifests
+   - Describe push activities
+ -----------------------------------------  
+ ---
+ # comment in manifest 
+ # parent/child manifest has to use the inherit attributes
+ inherit: base_mainifest.yml  # this would be parent that it inherit settings from.
+ instances: 2   # shared attributes for multiple application if you have that in Applications block
+ Applications:
+	- name somewebsite # this is application name has to be unique in shared environment i.e. same domain
+	 buildpack: https://github.com/heroku/heroku-buildpack-play.git ...
+	 buildpacks: 
+      - binary_buildpack  # dotnet_core_buildpack
+	 stack: windows    # cflinuxfs3, 
+	 domain: domain.com 
+	 host: manage 
+	 instances: 3  # number of instances at deployment.  3 different container.  load balanceing
+	 memory: 512M  # memory per instance of application
+	 path: ./web/  # where your app is 
+	 timeout: 60   #  give more time to start or warm up time
+	 health-check-type: port |http |process  # port can be used on web app and it checks tcp connection.  Process 
+	 no-route: true  # 
+	 command: node app.js  # how to start my application
+	- name: secondapp 
+Services:
+   - mymongo
+   - rabbitqueue  
+env:
+	NODE_ENV: production
+	TRACKING: off
+--------------------------------------------
+
+CF Arhitecture -
+
+	Router - Routing
+	OAuth2 Server (UAA), Login Server - Authentication
+	Cloud Controller, Health Manager - APP Lifecycle
+	Application Execution (DEA - droplet execution engine) / Warden , Blob Storage - App Storage & Execution
+	Service Brokers - Services
+	Message Bus (NATS) - Messaging
+	Metrics Collector, App Log Aggregator - Metrics & logging
+
+	Cloud Foundry Containers -
+	Warden is for isolated, resource-constrained containers
+
+	Cloud Foundry Community -
+	github.com/cloudfoundry
+    https://github.com/cloudfoundry/stratos - Stratos: Web-based management tool.  Open source ui.
+
+How Roles Work -
+ 
+	Org Roles
+	  - Org Manager - Administer Entire Organization.  
+				Manageing users, viewing Quotas, Adding managing space, Inviting people to spaces, see what the applications in space
+	  - Org Auditor - people view, view quota, view users and roles.  Just an oversite positions
+	  
+	Space Roles - 
+	  - Space manager - add space, delete space, view status or instance count or how many services in space
+	  - Space Developer - deploy app, stop/start/rename/delete app.  Create an add view services in space.
+	  - Space Auditor - view but not edit.  View the status of things in the app.  what resources are being consumed by each.
+
+What Happens During Deployment?
+   - Cloud Controller creates record - in local database 
+   - Cloud Controller stores metadata - name of the app, how many instances, what buildpacks...
+   - Cloud Controller stores app files -  stores the application raw files in blob stores
+   - App start command issued -  issue start command
+   - Cloud Controller chooses staging DEA
+   - Staging DEA stages and streams 
+   - Staging DEA caches package
+   - Cloud Controller chooses runtime DEA
+   
+
+Performing No-Downtime Updates - Blue Green Deployment	
+   # route has name and maps to application. i.e. which application will handle requests.
+   # create a new website and new route.  #remember psdonationwebsite already exists and deployed.
+   # push is creating new website psdonationwesite-stg with same code and deployed from same sourcecode directory
+   - cf push psdonationwebsite-stg -n psdonationwebsite-stg # -n new route.  
+   # after the above there will be two apps now, psdonationwebsite and psdonationwebsite-stg with their own routes 
+   # cf apps   #  this should prove it that there are two applications with same exact code deployed.
+
+   # make both URL point to cfapps.io is domain (psdonationwebsite.cfapps.io or psdonationwebsite-stg.cfapps.io)
+   # request to both URL's will go to one site (staging)
+   # basically saying map the route of this perticular app(psdonationwebsite-stg), 
+   # on this domain(cfapps.io),on the psdonationwebsite host4!
+   - cf map-route psdonationwebsite-stg cfapps.io -n psdonationwebsite
+   # cf app psdonationwebsite-stg  # will show following for the URL's and so both URL's will allow to access stg site.
+    Urls: psdonationwebsite.cfapps.io, psdonationwebsite-stg.cfapps.io
+   # also this means that psdonationwebsite.cfapps.io URL is active on both application 
+   # and therefore load balanceing between the old and the new stg.
+   # this removes any URL pointing to the original prod site.  meaning the site/code exists but no URL point to it. 
+   # so taking the original site off line.
+   - cf unmap-route psdonationwebsite cfapps.io -n psdonationwebsite  
+   # so after above cf app psdonationwebsite will have no URL mapped and 
+   # therefore the original site can no longer be accessed.  but stg site still has both URL routing mapped
+   # and therfore with both URL's only stg is accessable
+   # removing the stage URL route/mapping
+   - cf unmap-route psdonationwebsite-stg cfapps.io -n psdonationwebsite-stg
+   # after this "cf app psdonationwebsite-stg" command will have following URL only
+   URLs: psdonationwebsite.cfapps.io
+   Example:
+   - cf push pcfwebapp -f ./Deployment/  
+   - cf app pcfwebapp
+   - cf push pcfwebappGreen -f ./Deployment/
+   - cf map-route pcfwebappGreen apps.fog.onefiserv.net -n pcfwebapp  # both pcfwebapp and pcfwebappgreen are accessed by the pcfwebapp.apps.fog.onefiserv.net (round robin or load balanced between the two apps)
+   - cf unmap-route pcfwebappgreen apps.fog.onefiserv.net -n pcfwebapp 
+
+
+
+Remote debugging -
+----------------
+set CF_HOME = 
+unset CF_HOME
+
+cf ssh BHAPI-V2-qa -c "curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l ~/app/vsdbg"
+
+Visual Studio command window:
+DebugAdapterHost.Logging /On /OutputWindow
+DebugAdapterHost.Launch /LaunchJson:C:\VSTS\BillerHub\BillerhubAPI_V2\Bilcd binlerhubAPI_V2\launch.json
+
+# https://docs.pivotal.io/application-service/2-7/devguide/deploy-apps/ssh-apps.html
+- cf allow-space-ssh SPACE-NAME  # 
+- cf ssh-enabled APPNAME  # check so if ssh enabled
+- cf ssh APPNAME -i 1  #i flag targets specific instance.
