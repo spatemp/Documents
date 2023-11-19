@@ -1,0 +1,70 @@
+
+# APT-GET - https://itsfoss.com/apt-get-linux-guide/
+# ----------
+# following commands updates the database with available packages
+# it will not update any packages.
+sudo apt-get update 
+
+#Upgrade installed packages with apt-get 
+# Once you have updated the package database, you can upgrade the installed packages.
+sudo apt-get upgrade
+# specific package 
+sudo apt-get upgrade <package_name>
+
+#fastest way to update and then upgrade packages
+sudo apt-get update && sudo apt-get upgrade -y
+
+#How to install new packages with apt-get
+sudo apt-get install <package_name>
+# Install a package, but dont upgrade it if it's there already.
+sudo apt-get install <package_name> --no-upgrade
+# In case you want to upgrade a package provided it’s already installed, but don’t want to install it if it’s not
+sudo apt-get install <package_name> --only-upgrade
+# specific verson
+sudo apt-get install <package_name>=<version_number>
+
+# UPGRADING LINUX - https://www.howtogeek.com/351360/how-to-upgrade-to-the-latest-version-of-ubuntu/
+# make sure this pacakge is installed 
+sudo apt install update-manager-core
+# which version to upgrade 
+# LTS Long term support or normal
+# Edit the “Prompt=” line in the file to say either ” Prompt=normal ” or ” Prompt=lts ” depending on whether you want to be prompted to upgrade to normal releases or only LTS releases.
+sudo nano /etc/update-manager/release-upgrades
+
+# do the updgrade of linux system
+do-release-upgrade -c
+
+# CHANGEING SHELL
+# ---------------
+# if prompt and up arrow is not working that means you are running /bin/sh 
+chsh -s /bin/bash
+# or to change another user's login shell (need to be root to do this obviously)
+sudo chsh -s /bin/bash <username>
+
+# ROOT - https://www.cyberciti.biz/faq/change-root-password-ubuntu-linux/
+# to become root
+sudo -i
+sudo passwd root  # to change or set password for root
+
+#LIGHTHTTPD - commands https://www.how2shout.com/linux/install-and-configure-lighttpd-server-on-ubuntu-20-04-lts/
+#--------------------
+apt-get install lighttpd
+systemctl start lighttpd
+# these commands works as well
+/etc/init.d/lighttpd stop
+/etc/init.d/lighttpd start
+/etc/init.d/lighttpd restart
+# we can start and enable the service to automatically start at boot.
+systemctl is-enabled lighttpd.service
+systemctl enable lighttpd.service
+systemctl status lighttpd.service
+
+# https://net2.com/how-to-list-start-and-stop-services-at-boot-time-in-linux-ubuntu-debian/
+#List all of the services that are active
+service –-status-all
+systemctl -t service –-state=active
+systemctl list-dependencies –-after ssh.service
+systemctl list-dependencies --before ssh.service
+
+# iptables to open up port ssh runnin on 1022 durin upgrade of the system.
+iptables -I INPUT -p tcp --dport 1022 -j ACCEPT
